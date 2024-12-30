@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Input, Table, Select, Radio } from "antd";
+import { Input, Table, Select, Radio, Space } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import search from "../assets/search.svg";
 import { parse } from "papaparse";
@@ -13,6 +13,7 @@ const TransactionSearch = ({
   exportToCsv,
   addTransaction,
   fetchTransactions,
+  deleteTransaction,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTag, setSelectedTag] = useState("");
@@ -71,6 +72,23 @@ const TransactionSearch = ({
       title: "Tag",
       dataIndex: "tag",
       key: "tag",
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, record) => (
+        <Space size="middle">
+          <button
+            className="btn"
+            onClick={() => {
+              console.log(record); // Check the record object to ensure it contains 'id'
+              deleteTransaction(record.id);
+            }} // Pass the transaction ID here
+          >
+            Delete
+          </button>
+        </Space>
+      ),
     },
   ];
 
@@ -177,7 +195,7 @@ const TransactionSearch = ({
             <button className="btn" onClick={exportToCsv}>
               Export to CSV
             </button>
-            <label for="file-csv" className="btn btn-blue">
+            <label htmlFor="file-csv" className="btn btn-blue">
               Import from CSV
             </label>
             <input
@@ -192,6 +210,9 @@ const TransactionSearch = ({
         </div>
 
         <Table columns={columns} dataSource={dataSource} />
+        {/* <button className="btn" onClick={deleteAll}>
+          Delete All Transactions
+        </button> */}
       </div>
     </div>
   );

@@ -15,6 +15,7 @@ import Loader from "./Loader";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { unparse } from "papaparse";
+import { doc, deleteDoc } from "firebase/firestore";
 
 const Dashboard = () => {
   const [user] = useAuthState(auth);
@@ -157,6 +158,7 @@ const Dashboard = () => {
         transaction
       );
       console.log("Document written with ID: ", docRef.id);
+      fetchTransactions();
       if (!many) {
         toast.success("Transaction Added!");
       }
@@ -172,11 +174,15 @@ const Dashboard = () => {
     setLoading(true);
     if (user) {
       const q = query(collection(db, `users/${user.uid}/transactions`));
+      // console.log(q);
       const querySnapshot = await getDocs(q);
       let transactionsArray = [];
       querySnapshot.forEach((doc) => {
         // doc.data() is never undefined for query doc snapshots
-        transactionsArray.push(doc.data());
+        transactionsArray.push({
+          ...doc.data(),
+          id: doc.id, // Store the Firebase document ID here
+        });
       });
       setTransactions(transactionsArray);
       toast.success("Transactions Fetched!");
@@ -197,7 +203,7 @@ const Dashboard = () => {
   };
 
   function reset() {
-    console.log("resetting");
+    setCurrentBalance(0);
   }
   const cardStyle = {
     boxShadow: "0px 0px 30px 8px rgba(227, 227, 227, 0.75)",
@@ -220,6 +226,32 @@ const Dashboard = () => {
     link.click();
     document.body.removeChild(link);
   }
+
+  const deleteTransaction = async (transactionId) => {
+    const user = auth.currentUser; // Get the current user
+    if (!user) {
+      console.error("User is not logged in!");
+      return;
+    }
+
+    try {
+      // Reference to the specific transaction
+      const transactionRef = doc(
+        db,
+        `users/${user.uid}/transactions`, // Path to the transaction in Firestore
+        transactionId // The ID of the transaction to delete
+      );
+
+      // Delete the transaction document from Firestore
+      await deleteDoc(transactionRef);
+      console.log("Transaction deleted successfully!");
+      fetchTransactions();
+      toast.success("Transaction deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting transaction:", error);
+      toast.error("Error deleting transaction!");
+    }
+  };
 
   return (
     <div className="dashboard-container">
@@ -274,6 +306,7 @@ const Dashboard = () => {
             exportToCsv={exportToCsv}
             fetchTransactions={fetchTransactions}
             addTransaction={addTransaction}
+            deleteTransaction={deleteTransaction}
           />
         </>
       )}
